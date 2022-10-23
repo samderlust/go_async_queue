@@ -14,11 +14,11 @@ type asyncQueue struct {
 type AsyncQueue interface {
 	AddJob(job AsyncJob)
 	Start()
-	enqueue(node AsyncNode)
-	dequeue()
-	emitEvent(eventType QueueEventType)
 	AddListener(func(event QueueEvent))
 	Size() int
+	enqueue(node AsyncNode)
+	dequeue()
+	emitEvent(eventType queueEventType)
 }
 
 // Add new job into the queue
@@ -41,14 +41,14 @@ func (a *asyncQueue) Start() {
 	}
 
 	a.isRunning = true
-	a.emitEvent(QueueStart)
+	a.emitEvent(QueueEventTypes.QueueStart)
 
 	for a.size > 0 {
 		a.dequeue()
 	}
 
 	a.isRunning = false
-	a.emitEvent(QueueEnd)
+	a.emitEvent(QueueEventTypes.QueueEnd)
 }
 
 // dequeue implements AsyncQueueI
@@ -59,7 +59,7 @@ func (a *asyncQueue) dequeue() {
 
 	currentNode := a.first
 
-	a.emitEvent(BeforeJob)
+	a.emitEvent(QueueEventTypes.BeforeJob)
 
 	currentNode.Job()
 
@@ -72,7 +72,7 @@ func (a *asyncQueue) dequeue() {
 	}
 
 	a.size--
-	a.emitEvent(AfterJob)
+	a.emitEvent(QueueEventTypes.AfterJob)
 }
 
 // add a new node into the queue
@@ -86,11 +86,10 @@ func (a *asyncQueue) enqueue(node AsyncNode) {
 	}
 
 	a.size++
-
-	a.emitEvent(NewJobAdded)
+	a.emitEvent(QueueEventTypes.NewJobAdded)
 }
 
-func (a *asyncQueue) emitEvent(eventType QueueEventType) {
+func (a *asyncQueue) emitEvent(eventType queueEventType) {
 	if a.listener != nil {
 		event := QueueEvent{
 			timeStamp: time.Now(),
@@ -109,5 +108,11 @@ func (a *asyncQueue) Size() int {
 
 func NewQueue() AsyncQueue {
 	var q AsyncQueue = &asyncQueue{}
+	return q
+}
+func NewAutoQueue() AsyncQueue {
+	var q AsyncQueue = &asyncQueue{
+		autoRun: true,
+	}
 	return q
 }
